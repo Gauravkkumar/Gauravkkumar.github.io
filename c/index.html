@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sharpwit Challenge</title>
+<meta name="description" content="A friend challenges you to beat their score on the same Sharpwit puzzle.">
+<meta name="robots" content="noindex">
+<link rel="icon" href="../favicon.png">
+<meta property="og:title" content="⚔️ You've been challenged on Sharpwit">
+<meta property="og:description" content="Same puzzle, your turn. Can you beat your friend's score?">
+<meta property="og:image" content="https://gauravkkumar.github.io/img/sharpwit-icon.png">
+<style>
+  :root { --bg: #F8FAFC; --card: #FFFFFF; --text: #0F172A; --muted: #475569; --hero: #071B4D; --border: #E2E8F0; --coin: #F59E0B; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0B1220; --card: #131C2E; --text: #E2E8F0; --muted: #94A3B8; --hero: #0E2A66; --border: #1E293B; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 480px; margin: 0 auto; padding: 32px 16px; }
+  .card { background: var(--hero); color: #fff; border-radius: 24px; padding: 28px 22px; text-align: center; }
+  .card img { width: 88px; height: 88px; border-radius: 22px; box-shadow: 0 8px 24px rgba(0,0,0,.35); }
+  h1 { margin: 16px 0 4px; font-size: 26px; line-height: 1.2; }
+  .game { font-size: 20px; font-weight: 800; color: var(--coin); margin: 4px 0; }
+  .target { font-size: 17px; color: #CBD5E1; margin: 0 0 20px; }
+  .target b { color: #fff; font-size: 22px; }
+  .btn { display: block; background: #fff; color: #071B4D; text-decoration: none; font-weight: 800; font-size: 18px; padding: 14px 20px; border-radius: 14px; }
+  .btn:active { opacity: .85; }
+  .note { color: var(--muted); font-size: 14px; text-align: center; margin: 18px 4px 0; }
+  .note a { color: inherit; font-weight: 700; }
+</style>
+</head>
+<body>
+<main>
+  <div class="card">
+    <img src="../img/sharpwit-icon.png" alt="Sharpwit">
+    <h1 id="title">⚔️ You've been challenged!</h1>
+    <p class="game" id="game"></p>
+    <p class="target" id="target">Same puzzle, your turn.</p>
+    <a class="btn" id="go" href="#">Get Sharpwit on Google Play</a>
+  </div>
+  <p class="note" id="note"></p>
+</main>
+<script>
+  // Keep in step with the app: src/lib/challenge.ts (link format) and src/games/meta.ts (games).
+  var PACKAGE = 'com.creativesolutionteam.sharpwit';
+  var PLAY = 'https://play.google.com/store/apps/details?id=' + PACKAGE + '&referrer=' +
+    encodeURIComponent('utm_source=challenge_link&utm_medium=share&utm_campaign=challenge');
+  var time = function (s) { return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+  var unit = function (one, many) { return function (s) { return s + ' ' + (s === 1 ? one : many); }; };
+  var GAMES = {
+    solitaire: ['♠️ Solitaire', time], wheel: ['🎡 Word Wheel', time], words: ['🔤 Word Search', time],
+    memory: ['🃏 Memory Match', unit('move', 'moves')], math: ['➗ Quick Math', unit('correct', 'correct')],
+    sudoku: ['🔢 Mini Sudoku', time], sudoku9: ['9️⃣ Sudoku', time], guess: ['🔠 Word Guess', unit('guess', 'guesses')],
+    sort: ['🧪 Color Sort', unit('move', 'moves')], merge: ['🔶 2048', function (s) { return s.toLocaleString() + ' pts'; }],
+    nonogram: ['🖼️ Nonogram', time], blocks: ['🧩 Block Fit', function (s) { return s + ' pts'; }]
+  };
+  var LEVELS = { easy: 'Easy', medium: 'Medium', hard: 'Hard' };
+
+  var q = new URLSearchParams(location.search);
+  var g = q.get('g'), d = q.get('d'), s = q.get('s'), t = q.get('t');
+  var whole = function (v, max) { return v !== null && /^\d{1,10}$/.test(v) && Number(v) <= max; };
+  var valid = Object.prototype.hasOwnProperty.call(GAMES, g) && Object.prototype.hasOwnProperty.call(LEVELS, d) && whole(s, 4294967295);
+  var android = /Android/i.test(navigator.userAgent);
+  var go = document.getElementById('go');
+  var note = document.getElementById('note');
+  go.href = PLAY;
+
+  if (valid) {
+    document.getElementById('game').textContent = GAMES[g][0] + ' · ' + LEVELS[d];
+    if (whole(t, 1000000)) {
+      document.getElementById('target').innerHTML = 'Score to beat: <b></b>';
+      document.querySelector('#target b').textContent = GAMES[g][1](Number(t));
+    }
+    if (android) {
+      // Opens the app on this puzzle; without the app, Android goes to Google Play instead.
+      var path = 'play/' + g + '?difficulty=' + d + '&seed=' + s + (whole(t, 1000000) ? '&vs=' + t : '');
+      go.href = 'intent://' + path + '#Intent;scheme=sharpwit;package=' + PACKAGE + ';S.browser_fallback_url=' + encodeURIComponent(PLAY) + ';end';
+      go.textContent = 'Accept the challenge';
+      note.innerHTML = 'New to Sharpwit? The button takes you to Google Play. After installing, come back and tap it again to play this puzzle.';
+    } else {
+      note.textContent = 'Sharpwit is an Android app. Open this link on your Android phone to play the challenge.';
+    }
+  } else {
+    document.getElementById('target').textContent = 'Ten quick brain games, a daily challenge and streaks.';
+  }
+</script>
+</body>
+</html>
